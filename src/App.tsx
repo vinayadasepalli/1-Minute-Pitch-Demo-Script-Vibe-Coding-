@@ -12,15 +12,17 @@ import { ReturnWelcomeToast } from './components/ReturnWelcomeToast';
 import { MicroSprintModal } from './components/MicroSprintModal';
 import { useFaceMeshTracker } from './hooks/useFaceMeshTracker';
 import { playBlip, playPanicAlert, playSuccessChime } from './utils/sound';
-import { AlertTriangle, Sparkles, ShieldCheck, HeartPulse } from 'lucide-react';
+import { FastForward, HeartPulse, RotateCcw, MessageSquareQuote, Layers, Compass, Sparkles, Zap, ShieldCheck } from 'lucide-react';
 
 export default function App() {
   // Activity Mode: 'work' | 'game' | 'timepass'
   const [currentMode, setCurrentMode] = useState<ActivityMode>('work');
   const [avoidedTask, setAvoidedTask] = useState<string>('Writing Q3 Strategy RFC');
 
-  // Timers in seconds
-  // Gaze target: 1800s (30m), Immobility target: 1200s (20m)
+  // Active Tab for demo simplicity
+  const [activeTab, setActiveTab] = useState<'excuses' | 'distractions' | 'timeline'>('excuses');
+
+  // Timers in seconds (Gaze: 1800s, Immobility: 1200s)
   const [gazeSeconds, setGazeSeconds] = useState<number>(0);
   const [immobilitySeconds, setImmobilitySeconds] = useState<number>(0);
 
@@ -31,7 +33,7 @@ export default function App() {
   const [isMicroSprintOpen, setIsMicroSprintOpen] = useState<boolean>(false);
   const [shortcutFeedback, setShortcutFeedback] = useState<string | null>(null);
 
-  // Sudden Fall / Drop State
+  // Fall Detection State
   const [isFallModalOpen, setIsFallModalOpen] = useState<boolean>(false);
 
   // Video element & Stream state from CameraHUD
@@ -87,7 +89,6 @@ export default function App() {
   // Main 1-second biometrics accumulation loop
   useEffect(() => {
     const timer = setInterval(() => {
-      // Pause timers if intervention or fall alert is active
       if (isInterventionOpen || isFallModalOpen) return;
 
       // "Gaze Time": increments every second user is looking towards screen (target: 30m)
@@ -104,8 +105,7 @@ export default function App() {
     return () => clearInterval(timer);
   }, [isInterventionOpen, isFallModalOpen, isLookingAtScreen, userStatus]);
 
-  // Check intervention threshold:
-  // When Gaze Time >= 30m (1800s) OR Immobility Time >= 20m (1200s), trigger intervention modal
+  // Check intervention threshold
   useEffect(() => {
     if (
       (gazeSeconds >= 1800 || immobilitySeconds >= 1200) &&
@@ -119,13 +119,13 @@ export default function App() {
     }
   }, [gazeSeconds, immobilitySeconds, isInterventionOpen, hasInterventionTriggered, isFallModalOpen]);
 
-  // Fast-Forward Demo: Sets Gaze to 29:55 and Immobility to 19:55
+  // Fast-Forward Demo: Sets Gaze to 29:55 and Immobility to 19:55 (fires live in 5s)
   const triggerFastForward = useCallback(() => {
     playPanicAlert();
     setGazeSeconds(1795); // 29m 55s
     setImmobilitySeconds(1195); // 19m 55s
     setHasInterventionTriggered(false);
-    setShortcutFeedback('⏩ Fast-Forward: Set to 29:55 & 19:55 (fires live in 5s!)');
+    setShortcutFeedback('⏩ Fast-Forward: Set to 29:55 & 19:55 (Fires live in 5s!)');
     setTimeout(() => setShortcutFeedback(null), 3500);
   }, []);
 
@@ -139,11 +139,11 @@ export default function App() {
     setIsReturnWelcomeOpen(false);
     clearSuddenDrop();
     setIsFallModalOpen(false);
-    setShortcutFeedback('🔄 Timers reset to 00:00');
+    setShortcutFeedback('🔄 All Timers Reset to 00:00');
     setTimeout(() => setShortcutFeedback(null), 2500);
   }, [clearSuddenDrop]);
 
-  // Keyboard Shortcuts: 'D' for Fast-Forward, 'R' for Reset
+  // Keyboard Shortcuts: 'D' for Fast-Forward, 'R' for Reset, 'F' for Fall test
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
@@ -156,12 +156,16 @@ export default function App() {
       } else if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
         resetAllTimers();
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        triggerSuddenDrop();
+        setIsFallModalOpen(true);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [triggerFastForward, resetAllTimers]);
+  }, [triggerFastForward, resetAllTimers, triggerSuddenDrop]);
 
   // Handle completion of physical reset
   const handleCompleteReset = useCallback(() => {
@@ -187,10 +191,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-200 antialiased font-sans">
-      {/* Shortcut Feedback Banner */}
+      {/* Toast Feedback Banner */}
       {shortcutFeedback && (
         <div className="fixed top-18 left-1/2 -translate-x-1/2 z-50 animate-bounce">
-          <div className="px-3.5 py-1.5 rounded-full bg-slate-900/95 border border-amber-400/60 shadow-[0_0_20px_rgba(245,158,11,0.3)] text-amber-300 font-mono text-xs font-bold backdrop-blur-md flex items-center gap-2">
+          <div className="px-4 py-1.5 rounded-full bg-slate-900/95 border border-amber-400/70 shadow-[0_0_20px_rgba(245,158,11,0.4)] text-amber-300 font-mono text-xs font-bold backdrop-blur-md flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>{shortcutFeedback}</span>
           </div>
@@ -207,53 +211,78 @@ export default function App() {
         formattedTime={formattedTime}
       />
 
-      {/* Main Dashboard Layout */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 pb-24 space-y-4">
-        {/* NEW: Lightweight Activity Selector [Work | Game | Time Pass] */}
-        <ActivitySelector
-          currentMode={currentMode}
-          onSelectMode={handleSelectMode}
-          avoidedTask={avoidedTask}
-          onSelectTaskPreset={(preset) => {
-            setAvoidedTask(preset);
-            playSuccessChime();
-          }}
-        />
-
-        {/* Live Pitch & Safety Testing Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 px-3.5 py-2 rounded-lg bg-slate-900/60 border border-slate-800 text-xs font-mono text-slate-400">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-            <span className="text-slate-300 font-semibold">Active Mesh:</span>
-            <span className="text-slate-400">
-              Nose Tip #1 • 200ms Inference • Fall & Immobility Guard
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 pb-24 space-y-3.5">
+        {/* Simple Demo Action Strip */}
+        <section aria-label="Demo Controls" className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-3 shadow-md">
+          {/* Left: Mode Picker */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <span className="text-xs font-mono text-slate-400 font-semibold hidden sm:inline">
+              Mode:
             </span>
+            <div className="inline-flex p-1 rounded-xl bg-slate-950 border border-slate-800 gap-1 w-full sm:w-auto justify-center">
+              {(Object.keys(MODE_CONFIGS) as ActivityMode[]).map((mode) => {
+                const cfg = MODE_CONFIGS[mode];
+                const isSelected = currentMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    onClick={() => {
+                      playBlip(600);
+                      handleSelectMode(mode);
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                      isSelected
+                        ? mode === 'work'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+                          : mode === 'game'
+                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                    }`}
+                  >
+                    {cfg.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 text-[11px] flex-wrap">
-            {/* Fall Simulation Trigger for testing */}
+          {/* Right: Instant Pitch Demo Triggers */}
+          <div className="flex items-center gap-2 flex-wrap justify-end w-full md:w-auto">
+            <button
+              onClick={triggerFastForward}
+              className="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-400/40 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+              title="Jump to 29:55 so the 30m break triggers live in 5s"
+            >
+              <FastForward className="w-3.5 h-3.5 text-amber-400" />
+              <span>⚡ Fast-Forward [D] (Fires in 5s)</span>
+            </button>
+
             <button
               onClick={() => {
                 triggerSuddenDrop();
                 setIsFallModalOpen(true);
               }}
-              className="px-2 py-0.5 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-500/40 flex items-center gap-1 font-mono transition-colors cursor-pointer"
-              title="Test sudden drop / fall alert"
+              className="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/40 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+              title="Test sudden drop / emergency family call trigger"
             >
-              <HeartPulse className="w-3 h-3 text-rose-400" />
-              <span>Simulate Drop (1s Fall)</span>
+              <HeartPulse className="w-3.5 h-3.5 text-rose-400" />
+              <span>🚨 Test Fall Alert [F]</span>
             </button>
 
-            <span className="px-2 py-0.5 rounded bg-slate-800 text-amber-300 font-bold border border-slate-700">
-              [D] Jump (5s)
-            </span>
-            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-bold border border-slate-700">
-              [R] Reset
-            </span>
+            <button
+              onClick={resetAllTimers}
+              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-mono flex items-center gap-1 transition-all cursor-pointer"
+              title="Reset all timers to 00:00"
+            >
+              <RotateCcw className="w-3 h-3 text-slate-400" />
+              <span>[R]</span>
+            </button>
           </div>
-        </div>
+        </section>
 
-        {/* 2. Central Metric Cards: Gaze Time & Immobility Time with Dynamic Progress Bars */}
+        {/* 2. Central Metric Cards: Gaze Time & Immobility Time */}
         <CentralMetricCards
           gazeSeconds={gazeSeconds}
           immobilitySeconds={immobilitySeconds}
@@ -265,29 +294,85 @@ export default function App() {
           mode={currentMode}
         />
 
-        {/* 3. Avoidance Telemetry & Timeline Track */}
-        <AvoidanceTimeline
-          seconds={gazeSeconds}
-          onSeek={(secs) => {
-            playBlip(540);
-            setGazeSeconds(secs);
-          }}
-          isPanicMode={isPanicMode}
-        />
+        {/* 3. Simple Tabbed Content Area for Demo Convenience */}
+        <section aria-label="Interactive Demo Tools" className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 backdrop-blur-sm shadow-md">
+          {/* Tab Headers */}
+          <div className="flex items-center gap-2 border-b border-slate-800 pb-3 mb-4 overflow-x-auto">
+            <button
+              onClick={() => {
+                playBlip(540);
+                setActiveTab('excuses');
+              }}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-sans font-medium flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'excuses'
+                  ? 'bg-slate-800 text-white font-bold border border-slate-700 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+            >
+              <MessageSquareQuote className="w-3.5 h-3.5 text-emerald-400" />
+              <span>
+                {currentMode === 'game' ? '🎮 Squad Pause Messages' : currentMode === 'timepass' ? '🍿 Reality Checks' : '💬 Plausible Excuses'}
+              </span>
+            </button>
 
-        {/* 4. Lower Dashboard Grid: Excuses Generator & Distractions Log (adapted to Work, Game, Time Pass) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-          <ExecutiveExcuseGenerator
-            avoidedTask={avoidedTask}
-            isPanicMode={isPanicMode}
-            mode={currentMode}
-          />
+            <button
+              onClick={() => {
+                playBlip(540);
+                setActiveTab('distractions');
+              }}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-sans font-medium flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'distractions'
+                  ? 'bg-slate-800 text-white font-bold border border-slate-700 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              <span>📋 Activities & Distractions Log</span>
+            </button>
 
-          <HighImpactDistractions mode={currentMode} />
-        </div>
+            <button
+              onClick={() => {
+                playBlip(540);
+                setActiveTab('timeline');
+              }}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-sans font-medium flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'timeline'
+                  ? 'bg-slate-800 text-white font-bold border border-slate-700 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5 text-amber-400" />
+              <span>⏱️ 30-Min Trajectory</span>
+            </button>
+          </div>
+
+          {/* Tab Body */}
+          {activeTab === 'excuses' && (
+            <ExecutiveExcuseGenerator
+              avoidedTask={avoidedTask}
+              isPanicMode={isPanicMode}
+              mode={currentMode}
+            />
+          )}
+
+          {activeTab === 'distractions' && (
+            <HighImpactDistractions mode={currentMode} />
+          )}
+
+          {activeTab === 'timeline' && (
+            <AvoidanceTimeline
+              seconds={gazeSeconds}
+              onSeek={(secs) => {
+                playBlip(540);
+                setGazeSeconds(secs);
+              }}
+              isPanicMode={isPanicMode}
+            />
+          )}
+        </section>
       </main>
 
-      {/* 5. Bottom-Right HUD: ~180px Webcam Picture-in-Picture with glowing green pill & ΔMotion */}
+      {/* 4. Bottom-Right HUD: Picture-in-Picture with glowing green pill & ΔMotion */}
       <CameraHUD
         isPanicMode={isPanicMode}
         onVideoElementReady={(video, stream) => {
@@ -302,7 +387,7 @@ export default function App() {
         isLookingAtScreen={isLookingAtScreen}
       />
 
-      {/* 6. Intervention Modal: Triggered at 30m Gaze or 20m Immobility */}
+      {/* 5. Intervention Modal: Triggered at 30m Gaze or 20m Immobility */}
       <InterventionModal
         isOpen={isInterventionOpen}
         onClose={() => setIsInterventionOpen(false)}
@@ -315,7 +400,7 @@ export default function App() {
         }}
       />
 
-      {/* 7. Sudden Drop / Fall Emergency Modal (Calls family if not up in 1 min or OK clicked) */}
+      {/* 6. Sudden Drop / Fall Emergency Modal */}
       <FallDetectionModal
         isOpen={isFallModalOpen}
         onDismiss={() => {
@@ -325,7 +410,7 @@ export default function App() {
         isUpright={isUpright}
       />
 
-      {/* 8. Return Welcome Toast */}
+      {/* 7. Return Welcome Toast */}
       <ReturnWelcomeToast
         isOpen={isReturnWelcomeOpen}
         onClose={() => setIsReturnWelcomeOpen(false)}
@@ -333,7 +418,7 @@ export default function App() {
         onStartMicroSprint={() => setIsMicroSprintOpen(true)}
       />
 
-      {/* 9. 2-Minute Micro-Sprint Sandbox Modal */}
+      {/* 8. 2-Minute Micro-Sprint Sandbox Modal */}
       <MicroSprintModal
         isOpen={isMicroSprintOpen}
         onClose={() => setIsMicroSprintOpen(false)}
