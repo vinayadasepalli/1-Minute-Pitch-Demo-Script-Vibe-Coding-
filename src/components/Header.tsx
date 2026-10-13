@@ -9,6 +9,7 @@ interface HeaderProps {
   onFastForward: () => void;
   onReset: () => void;
   formattedTime: string;
+  onOpenGuide?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -18,6 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   onFastForward,
   onReset,
   formattedTime,
+  onOpenGuide,
 }) => {
   const [isEditingTask, setIsEditingTask] = useState(false);
   const [taskDraft, setTaskDraft] = useState(avoidedTask);
@@ -145,10 +147,25 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
+            {/* Real-Life Playbook Button */}
+            {onOpenGuide && (
+              <button
+                onClick={() => {
+                  playBlip(600);
+                  onOpenGuide();
+                }}
+                className="px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 text-xs font-sans font-medium flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                title="Real-Life Workstation & Ergonomics Guide"
+              >
+                <span className="text-sm">📖</span>
+                <span className="hidden sm:inline">Real-Life Guide</span>
+              </button>
+            )}
+
             {/* REQUIRED BUTTON: Top-right button labeled "⏩ Fast-Forward Demo (Jump to 29m)" */}
             <button
               onClick={handleFastForwardClick}
-              className={`relative group inline-flex items-center gap-2 px-3.5 py-2 rounded-lg font-mono text-xs font-semibold transition-all shadow-md active:scale-95 ${
+              className={`relative group inline-flex items-center gap-2 px-3.5 py-2 rounded-lg font-mono text-xs font-semibold transition-all shadow-md active:scale-95 cursor-pointer ${
                 isPanicMode
                   ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.4)] border border-rose-400/50'
                   : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold border border-amber-400/40 shadow-[0_0_15px_rgba(245,158,11,0.25)]'

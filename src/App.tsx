@@ -10,6 +10,7 @@ import { InterventionModal } from './components/InterventionModal';
 import { FallDetectionModal } from './components/FallDetectionModal';
 import { ReturnWelcomeToast } from './components/ReturnWelcomeToast';
 import { MicroSprintModal } from './components/MicroSprintModal';
+import { RealLifeGuideModal } from './components/RealLifeGuideModal';
 import { useFaceMeshTracker } from './hooks/useFaceMeshTracker';
 import { playBlip, playPanicAlert, playSuccessChime } from './utils/sound';
 import { FastForward, HeartPulse, RotateCcw, MessageSquareQuote, Layers, Compass, Sparkles, Zap, ShieldCheck } from 'lucide-react';
@@ -35,6 +36,9 @@ export default function App() {
 
   // Fall Detection State
   const [isFallModalOpen, setIsFallModalOpen] = useState<boolean>(false);
+
+  // Real-Life Guide Modal State
+  const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
 
   // Video element & Stream state from CameraHUD
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
@@ -201,7 +205,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 1. Header (Title, Subtitle with avoided task, Fast-Forward Button) */}
+      {/* 1. Header (Title, Subtitle with avoided task, Fast-Forward Button, Real-Life Guide) */}
       <Header
         avoidedTask={avoidedTask}
         setAvoidedTask={setAvoidedTask}
@@ -209,6 +213,7 @@ export default function App() {
         onFastForward={triggerFastForward}
         onReset={resetAllTimers}
         formattedTime={formattedTime}
+        onOpenGuide={() => setIsGuideOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -269,6 +274,17 @@ export default function App() {
             >
               <HeartPulse className="w-3.5 h-3.5 text-rose-400" />
               <span>🚨 Test Fall Alert [F]</span>
+            </button>
+
+            <button
+              onClick={() => {
+                playBlip(600);
+                setIsGuideOpen(true);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+              title="Open Real-Life Workstation & Ergonomics Guide"
+            >
+              <span>📖 Playbook Guide</span>
             </button>
 
             <button
@@ -423,6 +439,16 @@ export default function App() {
         isOpen={isMicroSprintOpen}
         onClose={() => setIsMicroSprintOpen(false)}
         avoidedTask={avoidedTask}
+      />
+
+      {/* 9. Real-World Playbook & Ergonomics Guide Modal */}
+      <RealLifeGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        onStartMicroSprint={() => {
+          setIsGuideOpen(false);
+          setIsMicroSprintOpen(true);
+        }}
       />
     </div>
   );
