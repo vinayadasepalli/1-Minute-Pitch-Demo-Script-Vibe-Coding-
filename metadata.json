@@ -1,0 +1,6 @@
+{
+  "name": "The Procrastination Assistant",
+  "description": "A sleek, privacy-first distraction telemetry HUD and deadline defense dashboard.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
