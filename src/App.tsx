@@ -11,6 +11,7 @@ import { FallDetectionModal } from './components/FallDetectionModal';
 import { ReturnWelcomeToast } from './components/ReturnWelcomeToast';
 import { MicroSprintModal } from './components/MicroSprintModal';
 import { RealLifeGuideModal } from './components/RealLifeGuideModal';
+import { MinimizedWidget } from './components/MinimizedWidget';
 import { useFaceMeshTracker } from './hooks/useFaceMeshTracker';
 import { playBlip, playPanicAlert, playSuccessChime } from './utils/sound';
 import { FastForward, HeartPulse, RotateCcw, MessageSquareQuote, Layers, Compass, Sparkles, Zap, ShieldCheck } from 'lucide-react';
@@ -39,6 +40,9 @@ export default function App() {
 
   // Real-Life Guide Modal State
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
+
+  // Screen Minimized Mode
+  const [isScreenMinimized, setIsScreenMinimized] = useState<boolean>(false);
 
   // Video element & Stream state from CameraHUD
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
@@ -163,7 +167,11 @@ export default function App() {
       } else if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
         triggerSuddenDrop();
+        setIsScreenMinimized(false);
         setIsFallModalOpen(true);
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        setIsScreenMinimized((prev) => !prev);
       }
     };
 
@@ -205,19 +213,65 @@ export default function App() {
         </div>
       )}
 
-      {/* 1. Header (Title, Subtitle with avoided task, Fast-Forward Button, Real-Life Guide) */}
-      <Header
-        avoidedTask={avoidedTask}
-        setAvoidedTask={setAvoidedTask}
-        isPanicMode={isPanicMode}
-        onFastForward={triggerFastForward}
-        onReset={resetAllTimers}
-        formattedTime={formattedTime}
-        onOpenGuide={() => setIsGuideOpen(true)}
-      />
+      {/* If screen is minimized: Show floating companion dock widget */}
+      {isScreenMinimized ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center select-none">
+          <MinimizedWidget
+            avoidedTask={avoidedTask}
+            currentMode={currentMode}
+            gazeSeconds={gazeSeconds}
+            immobilitySeconds={immobilitySeconds}
+            isLookingAtScreen={isLookingAtScreen}
+            userStatus={userStatus}
+            isPanicMode={isPanicMode}
+            deltaPos={deltaPos}
+            onMaximize={() => setIsScreenMinimized(false)}
+            onFastForward={triggerFastForward}
+            onReset={resetAllTimers}
+            onTriggerFall={() => {
+              triggerSuddenDrop();
+              setIsScreenMinimized(false);
+              setIsFallModalOpen(true);
+            }}
+          />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 pb-24 space-y-3.5">
+          {/* Minimal ambient workspace when minimized */}
+          <div className="max-w-md p-6 rounded-2xl border border-slate-800/80 bg-slate-900/40 backdrop-blur-md mt-24 text-slate-400 text-xs font-sans space-y-2">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto mb-2">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-200">
+              Focus Mode Active (Screen Minimized)
+            </h3>
+            <p className="text-slate-400 leading-relaxed">
+              Full screen is minimized to eliminate visual distraction. Biometric gaze tracking, immobility detection, and fall protection are running in the background.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => setIsScreenMinimized(false)}
+                className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs border border-slate-700 transition-colors cursor-pointer"
+              >
+                Click to Expand Full Screen [M]
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* 1. Header (Title, Subtitle with avoided task, Fast-Forward Button, Real-Life Guide, Minimize) */}
+          <Header
+            avoidedTask={avoidedTask}
+            setAvoidedTask={setAvoidedTask}
+            isPanicMode={isPanicMode}
+            onFastForward={triggerFastForward}
+            onReset={resetAllTimers}
+            formattedTime={formattedTime}
+            onOpenGuide={() => setIsGuideOpen(true)}
+            onMinimizeScreen={() => setIsScreenMinimized(true)}
+          />
+
+          {/* Main Content Area */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 pb-24 space-y-3.5">
         {/* Simple Demo Action Strip */}
         <section aria-label="Demo Controls" className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-3 shadow-md">
           {/* Left: Mode Picker */}
@@ -387,6 +441,8 @@ export default function App() {
           )}
         </section>
       </main>
+      </>
+      )}
 
       {/* 4. Bottom-Right HUD: Picture-in-Picture with glowing green pill & ΔMotion */}
       <CameraHUD
